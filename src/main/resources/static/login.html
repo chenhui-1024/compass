@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Compass</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.14.0/index.js"></script>
+    <link href="https://cdn.bootcdn.net/ajax/libs/element-ui/2.14.0/theme-chalk/index.css" rel="stylesheet">
+    <script src="https://cdn.bootcdn.net/ajax/libs/axios/0.21.1/axios.js"></script>
+</head>
+<body>
+
+<div id="app">
+    <el-dialog title="欢迎使用决策引擎" :visible.sync="showLoginDialog" :show-close="false" :close-on-press-escape="false">
+        <el-form :data="account">
+            <el-form-item label="用户名">
+                <el-input v-model="account.username"></el-input>
+            </el-form-item>
+            <el-form-item label="密码">
+                <el-input v-model="account.password" show-password></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="login">登录</el-button>
+            </el-form-item>
+        </el-form>
+    </el-dialog>
+</div>
+
+<script>
+
+    const axiosInstance = axios.create(
+        {
+            baseURL: "http://localhost:8024/ch-compass",
+            timeout: 2000,
+            validateStatus: function (status) {
+                return status >= 200 && status < 500;
+            }
+        }
+    )
+
+    new Vue({
+        el: '#app',
+        data: function () {
+            return {
+                showLoginDialog: true,
+                account: {username: null, password: null}
+            }
+        },
+        methods: {
+            showMessage:function(message,type){
+                this.$message({
+                    message:message,
+                    type:type
+                })
+            },
+            login: function () {
+                if (this.account.username == null || this.account.username.length == 0) {
+                    this.showMessage('请输入用户名','warning')
+                    return
+                }
+
+                if (this.account.password == null || this.account.password.length == 0) {
+                    this.showMessage('请输入密码','warning')
+                    return
+                }
+
+                axiosInstance
+                    .post('/login', this.account)
+                    .then(rsp => {
+                        if (rsp.status == 200) {
+                            window.localStorage.setItem("loggedAccount", JSON.stringify(this.account));
+                            window.location.href = "sap.html"
+                        } else {
+                            this.showMessage(rsp.data.message, 'error')
+                        }
+                    })
+
+            }
+        }
+
+    })
+</script>
+
+
+</body>
+</html>

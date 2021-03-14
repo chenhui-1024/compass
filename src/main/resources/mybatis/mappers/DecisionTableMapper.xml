@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ch.compass.core.persistence.mapper.DecisionTableMapper">
+    <resultMap id="decisionTableMap" type="com.ch.compass.core.model.DecisionTable">
+        <result column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="input_variables_json" property="inputVariables"
+                typeHandler="com.ch.compass.core.persistence.mapper.VariablesTypeHandler"/>
+        <result column="output_variables_json" property="outputVariables"
+                typeHandler="com.ch.compass.core.persistence.mapper.VariablesTypeHandler"/>
+        <result column="rules_json" property="rules"
+                typeHandler="com.ch.compass.core.persistence.mapper.RulesTypeHandler"/>
+        <result column="status" property="status"/>
+        <result column="version" property="version"/>
+        <result column="creator" property="creator"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+
+    <sql id="all_columns">
+        id,
+        name,
+        description,
+        input_variables_json,
+        output_variables_json,
+        rules_json,
+        status,
+        version,
+        creator,
+        create_time
+    </sql>
+
+    <select id="count" resultType="java.lang.Integer">
+        select count(*) from compass_decision_table
+    </select>
+
+    <select id="selectMany" resultMap="decisionTableMap">
+        select
+        <include refid="all_columns"/>
+        from compass_decision_table
+        order by create_time desc
+    </select>
+
+    <select id="selectOne" resultMap="decisionTableMap">
+        select
+        <include refid="all_columns"/>
+        from compass_decision_table
+        where id = #{id}
+    </select>
+
+    <select id="insertOne" parameterType="com.ch.compass.core.model.DecisionTable">
+        insert into compass_decision_table
+        (
+        <include refid="all_columns"/>
+        )
+        values(
+        #{id}, #{name}, #{description},
+        #{inputVariables, typeHandler=com.ch.compass.core.persistence.mapper.VariablesTypeHandler},
+        #{outputVariables, typeHandler=com.ch.compass.core.persistence.mapper.VariablesTypeHandler},
+        #{rules, typeHandler=com.ch.compass.core.persistence.mapper.RulesTypeHandler},
+        #{status},
+        #{version},
+        #{creator},
+        #{createTime}
+        )
+    </select>
+
+    <update id="updateOne" parameterType="com.ch.compass.core.model.DecisionTable">
+        update compass_decision_table
+        <set>
+            <if test="name!=null">
+                name = #{name},
+            </if>
+            <if test="description!=null">
+                description = #{description},
+            </if>
+            <if test="inputVariables!=null">
+                input_variables_json =
+                #{inputVariables,typeHandler=com.ch.compass.core.persistence.mapper.VariablesTypeHandler},
+            </if>
+            <if test="outputVariables!=null">
+                output_variables_json =
+                #{outputVariables, typeHandler=com.ch.compass.core.persistence.mapper.VariablesTypeHandler},
+            </if>
+            <if test="rules!=null">
+                rules_json = #{rules, typeHandler=com.ch.compass.core.persistence.mapper.RulesTypeHandler},
+            </if>
+            <if test="status!=null">
+                status = #{status},
+            </if>
+            <if test="version!=null">
+                version = #{version},
+            </if>
+            <if test="creator!=null">
+                creator = #{creator},
+            </if>
+            <if test="createTime!=null">
+                create_time = #{createTime},
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteOne">
+        delete from compass_decision_table where id = #{id}
+    </delete>
+
+</mapper>

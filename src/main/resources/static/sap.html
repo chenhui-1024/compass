@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Compass</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.1/index.js"></script>
+    <link href="https://cdn.bootcdn.net/ajax/libs/element-ui/2.15.1/theme-chalk/index.css" rel="stylesheet">
+    <script src="https://cdn.bootcdn.net/ajax/libs/axios/0.21.1/axios.js"></script>
+    <script>
+        if(window.localStorage.getItem('loggedAccount')===null){
+           window.location.href='login.html'
+        }
+
+
+    </script>
+</head>
+<body>
+
+<div id="app">
+
+    <el-container>
+        <el-header height="100px" style="background-color:cornflowerblue;">
+            <div align="left">
+                <h3>决策引擎管理平台</h3>
+            </div>
+            <div align="right">
+                <el-dropdown @command="handleMenuCommand">
+                    <i class="el-icon-setting"></i>
+                    <el-dropdown-menu slot="dropdown">
+                        <el-dropdown-item command="decisionTables">决策列表</el-dropdown-item>
+                        <el-dropdown-item command="users">用户管理</el-dropdown-item>
+                        <el-dropdown-item command="logout">Logout</el-dropdown-item>
+                    </el-dropdown-menu>
+                </el-dropdown>
+                <span>{{this.loggedAccount.username}}</span>
+            </div>
+
+        </el-header>
+
+        <el-main>
+            <div v-if="divName=='decision-table-list'">
+                <el-link type="primary" @click="createDecisionTable">创建</el-link>
+
+                <el-table :data="dtPage.data">
+                    <el-table-column label="ID" prop="id"></el-table-column>
+                    <el-table-column label="名称" prop="name"></el-table-column>
+                    <el-table-column label="创建者" prop="creator"></el-table-column>
+                    <el-table-column label="创建时间" prop="createTime"></el-table-column>
+                    <el-table-column label="状态">
+                        <template slot-scope="scope">
+                            {{dtStatusNameMapping(scope.row.status)}}
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作">
+                        <template slot-scope="scope">
+                            <el-link type="primary" @click="editDt(scope.$index)"><i class="el-icon-edit"></i>编辑
+                            </el-link>
+                            <el-link type="danger" @click="doDeleteDt(scope.row.id)"><i class="el-icon-delete"></i>删除
+                            </el-link>
+                            <el-link type="info" @click="showTestDecisionTable(scope.row.id)"
+                                     v-show="scope.row.status==='DRAFT' || scope.row.status==='PUBLISHED'">
+                                <i class="el-icon-orange"></i>测试
+                            </el-link>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+
+            <div v-else-if="divName=='config-decision-table'">
+                <div style="text-align: right" v-show="this.dt.id">
+                    <el-button v-if="dt.status==='DRAFT' || dt.status==='OFF'" type="primary" @click="publishDt">发布
+                    </el-button>
+                    <el-button v-else-if="dt.status==='PUBLISHED'" type="warning" @click="offDt">下线</el-button>
+                    <el-button type="info" @click="gotoDtList">返回</el-button>
+                </div>
+
+                <div style="margin-top: 50px">
+                    <el-divider content-position="center">基本信息</el-divider>
+                    <el-form v-model="dt" inline>
+                        <el-form-item label="名称">
+                            <el-input v-model="dt.name" :maxlength="dtNameMaxLength" show-word-limit/>
+                        </el-form-item>
+                    </el-form>
+                    <el-form v-model="dt" inline>
+                        <el-form-item label="说明">
+                            <el-input v-model="dt.description" type="textarea" :maxlength="dtDescriptionMaxLength"
+                                      show-word-limit/>
+                        </el-form-item>
+                    </el-form>
+                </div>
+
+                <div style="margin-top: 80px">
+                    <el-divider content-position="center">输入变量</el-divider>
+                    <el-form v-model="dt">
+                        <el-table :data="dt.inputVariables">
+                            <el-table-column label='变量名称'>
+                                <template slot-scope="scope">
+                                    <el-input v-model.trim="scope.row.name" :maxlength="variableNameMaxLength"
+                                              show-word-limit></el-input>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label='数据类型'>
+                                <template slot-scope="scope">
+                                    <el-select v-model="scope.row.type">
+                                        <el-option v-for="type in types" :key="type" :value="type"></el-option>
+                                    </el-select>
+                                </template>
+                            </el-table-column>
+                            <el-table-column>
+                                <template slot-scope="scope">
+                                    <i class="el-icon-delete" @click="removeInput(scope.$index)"></i>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <i class="el-icon-plus" @click="addInput"></i>
+                    </el-form>
+                </div>
+
+
+                <div style="margin-top: 80px">
+                    <el-divider content-position="center">输出变量</el-divider>
+                    <el-form v-model="dt">
+                        <el-table :data="dt.outputVariables">
+                            <el-table-column label='变量名称'>
+                                <template slot-scope="scope">
+                                    <el-input v-model.trim="scope.row.name" :maxlength="variableNameMaxLength"
+                                              show-word-limit/>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label='数据类型'>
+                                <template slot-scope="scope">
+                                    <el-select v-model="scope.row.type">
+                                        <el-option v-for="type in types" :key="type" :value="type"/>
+                                    </el-select>
+                                </template>
+                            </el-table-column>
+                            <el-table-column>
+                                <template slot-scope="scope">
+                                    <i class="el-icon-delete" @click="removeOutput(scope.$index)"></i>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <i class="el-icon-plus" @click="addOutput"></i>
+                    </el-form>
+                </div>
+
+
+                <div style="margin-top: 80px">
+                    <el-divider content-position="center">规则和决策</el-divider>
+                    <el-form v-model="dt">
+                        <el-table :data="dt.rules">
+                            <el-table-column label="规则Key">
+                                <template slot-scope="scope">
+                                    <el-input v-model.trim="scope.row.key" :maxlength="ruleKeyNameLength"/>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="规则表达式">
+                                <template slot-scope="scope">
+                                    <el-input v-model="scope.row.expression"/>
+                                </template>
+                            </el-table-column>
+                            <el-table-column type="expand">
+                                <template slot-scope="scope">
+                                    <el-form v-for="o in dt.outputVariables" :inline="true" :key="o.name">
+                                        <el-form-item :label="o.name">
+                                            <div v-if="o.type=='NUMBER'">
+                                                <el-input-number :step="1"
+                                                                 v-model.number="scope.row['decision'][o.name]"/>
+                                            </div>
+                                            <div v-else-if="o.type=='TEXT'">
+                                                <el-input v-model="scope.row['decision'][o.name]"/>
+                                            </div>
+                                            <div v-else-if="o.type=='BOOL'">
+                                                <el-radio v-model="scope.row['decision'][o.name]"
+                                                          :label="false"></el-radio>
+                                                <el-radio v-model="scope.row['decision'][o.name]"
+                                                          :label="true"></el-radio>
+                                            </div>
+                                            <div v-else-if="o.type=='DATE'">
+                                                <el-date-picker v-model="scope.row['decision'][o.name]"
+                                                                value-format="yyyy-MM-dd"/>
+                                            </div>
+                                        </el-form-item>
+                                    </el-form>
+                                </template>
+                            </el-table-column>
+                            <el-table-column>
+                                <template slot-scope="scope">
+                                    <i class="el-icon-delete" @click="removeRule(scope.$index)"></i>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                        <i class="el-icon-plus" @click="addRule"></i>
+                    </el-form>
+                </div>
+
+                <el-divider></el-divider>
+                <el-button round type="primary" @click="doSaveDt">保存</el-button>
+                <el-button round @click="cancelCreateTable">返回</el-button>
+            </div>
+
+            <div v-else-if="divName=='test-decision-table'">
+                <div style="text-align: right">
+                    <el-link @click="gotoDtList" style="text-align: right">返回</el-link>
+                </div>
+
+                <el-divider content-position="left">测试决策表</el-divider>
+
+                <el-form v-model="testInput" inline v-for="i in dt.inputVariables" :key="i.name">
+                    <el-form-item :label="i.name">
+                        <div v-if="i.type=='NUMBER'">
+                            <el-input-number :step="1" v-model.number="testInput[i.name]"/>
+                        </div>
+                        <div v-else-if="i.type=='TEXT'">
+                            <el-input v-model="testInput[i.name]"/>
+                        </div>
+                        <div v-else-if="i.type=='BOOL'">
+                            <el-radio v-model="testInput[i.name]" :label="false"></el-radio>
+                            <el-radio v-model="testInput[i.name]" :label="true"></el-radio>
+                        </div>
+                        <div v-else-if="i.type=='DATE'">
+                            <el-date-picker v-model="testInput[i.name]" value-format="yyyy-MM-dd"/>
+                        </div>
+                    </el-form-item>
+                </el-form>
+                <el-divider></el-divider>
+                <div>
+                    <el-button @click="runTest">获取运行结果</el-button>
+                </div>
+
+                <div v-show="Object.keys(testResult).length!==0" style="margin-top: 100px">
+                    <el-divider content-position="left">运行结果</el-divider>
+                    <div style="background: aliceblue;border: dashed">
+                        <pre>
+                            <code>{{JSON.stringify(testResult,null,4)}}</code>
+                        </pre>
+                    </div>
+                </div>
+
+            </div>
+
+            <div v-else-if="divName=='account-list'">
+                <el-link @click="divName='show-account'">添加</el-link>
+
+                <el-table :data="accounts">
+                    <el-table-column label="用户名" prop="username"></el-table-column>
+                    <el-table-column label="邮箱" prop="email"></el-table-column>
+                    <el-table-column label="操作">
+                        <template slot-scope="scope">
+                            <el-link @click="editAccount(scope.row.username)"><i class="el-icon-edit"></i>编辑</el-link>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+
+            <div v-else-if="divName=='show-account'">
+                <el-form :data="account" inline>
+                    <el-form-item label="用户名">
+                        <el-input v-model="account.username" :disabled="account.id!=null" :maxlength="userNameMaxLength"
+                                  show-word-limit></el-input>
+                    </el-form-item>
+                </el-form>
+                <el-form :data="account" inline>
+                    <el-form-item label='邮箱'>
+                        <el-input v-model="account.email" :maxlength="emailMaxLength" show-word-limit></el-input>
+                    </el-form-item>
+                </el-form>
+                <el-form :data="account" inline v-show="account.id==null">
+                    <el-form-item label="密码">
+                        <el-input v-model=account.password show-password :maxLength="10" :minLength="10"
+                                  show-word-limit></el-input>
+                    </el-form-item>
+                </el-form>
+                <el-form :data="account" inline v-show="account.id==null">
+                    <el-form-item label="确认密码">
+                        <el-input v-model=account.confirmedPassword show-password></el-input>
+                    </el-form-item>
+                </el-form>
+                <div v-if="account.id!=null">
+                    <el-button type="primary" round @click="updateAccount">更新</el-button>
+                    <el-button round @click="gotoAccounts">返回</el-button>
+                </div>
+                <div v-else-if="account.id==null">
+                    <el-button type="primary" round @click="createAccount">保存</el-button>
+                    <el-button round @click="gotoAccounts">返回</el-button>
+                </div>
+
+            </div>
+
+        </el-main>
+    </el-container>
+
+</div>
+
+
+<script src="main.js"></script>
+
+</body>
+
+
+</html>

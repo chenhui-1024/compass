@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ch.compass.core.persistence.mapper.AccountMapper">
+    <resultMap id="accountMap" type="com.ch.compass.core.model.Account">
+        <result column="id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="email" property="email"/>
+        <result column="pwd_salt" property="pwdSalt"/>
+        <result column="hashed_pwd" property="hashedPwd"/>
+    </resultMap>
+
+
+    <sql id="all_columns">
+        id, username, email, pwd_salt, hashed_pwd, create_time
+    </sql>
+
+    <select id="selectOne" resultMap="accountMap">
+        select
+        <include refid="all_columns"/>
+        from compass_account
+        where username = #{username}
+    </select>
+
+    <insert id="insertOne" parameterType="com.ch.compass.core.model.Account">
+        insert into compass_account(
+        <include refid="all_columns"/>
+        )
+        values
+        (
+        #{id},
+        #{username}, #{email}, #{pwdSalt}, #{hashedPwd}, #{createTime}
+        )
+    </insert>
+
+    <update id="updateOne" parameterType="com.ch.compass.core.model.Account">
+        update compass_account
+        <set>
+            <if test="username!=null">
+                username = #{username},
+            </if>
+            <if test="email!=null">
+                email = #{email},
+            </if>
+            <if test="pwdSalt!=null">
+                pwd_salt = #{pwdSalt},
+            </if>
+            <if test="hashedPwd!=null">
+                hashed_pwdd = #{hashedPwd},
+            </if>
+        </set>
+        where username=#{username}
+    </update>
+
+    <delete id="deleteOne">
+        delete from compass_account where username=#{username}
+    </delete>
+
+    <select id="count" resultType="java.lang.Integer">
+        select count(*) from compass_account
+    </select>
+
+    <select id="selectMany" resultMap="accountMap">
+        select
+        <include refid="all_columns"/>
+        from compass_account order by create_time desc
+    </select>
+
+</mapper>
