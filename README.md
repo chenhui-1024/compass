@@ -30,7 +30,7 @@ java -jar compass-1.0.0.jar
 
 ### 联系方式
 
-allinchenhui@163.com
+任何问题，请联系：allinchenhui@163.com
 
 
 
