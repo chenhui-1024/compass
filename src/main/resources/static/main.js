@@ -30,7 +30,6 @@ new Vue({
             divName: 'decision-table-list',
             dtPage: {},
             dt: {},
-            baseUrl: 'http://localhost:8080',
             types: ['NUMBER', 'TEXT','BOOL','DATE'],
             dtNameMaxLength: 25,
             dtDescriptionMaxLength: 140,
@@ -66,11 +65,9 @@ new Vue({
             this.doRefreshDtList()
         },
         doSaveDt: function () {
-            console.log("dt:"+JSON.stringify(this.dt))
-
             if (this.dt.id) {
                 axiosInstance
-                    .post(this.baseUrl + "/decision-tables/" + this.dt.id, this.dt)
+                    .post("/decision-tables/" + this.dt.id, this.dt)
                     .then(rsp => {
                         if (rsp.status == 200) {
                             this.showMessage("成功更新决策表", 'success')
@@ -238,7 +235,7 @@ new Vue({
         },
         showTestDecisionTable: function (decisionTableId) {
             axiosInstance
-                .get(this.baseUrl + "/decision-tables/" + decisionTableId)
+                .get("/decision-tables/" + decisionTableId)
                 .then(rsp => {
                     if (rsp.status == 200) {
                         this.dt = JSON.parse(JSON.stringify(rsp.data))
@@ -321,7 +318,7 @@ new Vue({
         this.loggedAccount = JSON.parse(window.localStorage.getItem("loggedAccount"))
 
         axiosInstance
-            .get(this.baseUrl + "/decision-tables/")
+            .get("/decision-tables/")
             .then(rsp => {
                 if (rsp.status == 200) {
                     this.dtPage = JSON.parse(JSON.stringify(rsp.data))

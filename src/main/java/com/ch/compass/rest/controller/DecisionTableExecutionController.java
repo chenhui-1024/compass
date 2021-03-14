@@ -22,7 +22,7 @@ public class DecisionTableExecutionController {
     @RequestMapping(method = RequestMethod.POST)
     public DecisionTableExecutionResult acquireOutput(
             @PathVariable("decisionTableId") String decisionTableId,
-            @RequestParam(value = "force")boolean force,
+            @RequestParam(value = "force",defaultValue = "false")boolean force,
             @RequestBody Map<String, Object> input
     ) {
         return decisionTableManager.execute(decisionTableId, input,force);
